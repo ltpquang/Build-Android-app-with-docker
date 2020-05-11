@@ -14,17 +14,17 @@ LABEL maintainer "chucvv"
 
 ARG ANDROID_API_LEVEL=28
 ARG ANDROID_BUILD_TOOLS_LEVEL=28.0.3
-ARG PROXY_HOST=192.168.0.1
-ARG PROXY_PORT=3128
-ARG PROXY="http://$PROXY_HOST:$PROXY_PORT"
+#ARG PROXY_HOST=192.168.0.1
+#ARG PROXY_PORT=3128
+#ARG PROXY="http://$PROXY_HOST:$PROXY_PORT"
 
 ENV http_proxy $PROXY
 ENV https_proxy $PROXY
 
 ENV SDKMAN_OPTS="--proxy=http --proxy_host=${PROXY_HOST} --proxy_port=${PROXY_PORT}"
 
-RUN export HTTP_PROXY=$PROXY
-RUN export HTTPS_PROXY=$PROXY
+RUN if [ $PROXY_HOST ]; then export HTTP_PROXY=$PROXY; fi
+RUN if [ $PROXY_HOST ]; then export HTTPS_PROXY=$PROXY; fi
 
 ARG ANDROID_SDK_VERSION="sdk-tools-linux-4333796.zip"
 
@@ -44,6 +44,11 @@ RUN yes Y | apt install -y python-pip
 RUN yes Y | apt install build-essential libssl-dev libffi-dev python-dev #There are a few more packages and development tools to install to ensure that we have a robust set-up for our programming environment
 RUN yes Y | pip install --upgrade google-api-python-client oauth2client
 RUN yes Y | pip install requests
+RUN yes Y | apt install software-properties-common
+RUN yes Y | add-apt-repository ppa:ubuntu-toolchain-r/ppa
+RUN yes Y | apt install python3.7
+RUN rm /usr/bin/python3
+RUN ln -s python3.6 /usr/bin/python3
 # gradle
 ENV GRADLE_USER_HOME=/cache
 VOLUME $GRADLE_USER_HOME
@@ -67,9 +72,9 @@ ENV PATH "$PATH:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools"
 
 # sdkmanager
 RUN mkdir -p /root/.android && touch /root/.android/repositories.cfg
-RUN yes Y | sdkmanager --licenses $SDKMAN_OPTS 
-RUN $ANDROID_HOME/tools/bin/sdkmanager --update $SDKMAN_OPTS
-RUN yes Y | sdkmanager --verbose --no_https  $SDKMAN_OPTS $ANDROID_SDK_PACKAGES
+RUN yes Y | sdkmanager --licenses
+RUN $ANDROID_HOME/tools/bin/sdkmanager --update
+RUN yes Y | sdkmanager --verbose --no_https $ANDROID_SDK_PACKAGES
 
 # Install gcloud for Firebase test lab
 RUN export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
